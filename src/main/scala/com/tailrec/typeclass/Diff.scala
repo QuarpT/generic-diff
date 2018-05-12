@@ -77,14 +77,14 @@ object Diff {
   def apply[A](left: A, right: A)(implicit d: Diff[A]): DiffResult = d(left, right)
 }
 
-trait DiffLowPriorityImplicits extends DiffPrintLowPriorityImplicits {
+trait DiffImplicits0 extends DiffPrintImplicits {
   implicit def defaultDiff[A](implicit diffPrint: DiffPrint[A]): Diff[A] = Diff.build { (left, right) =>
     //    implicit def defaultDiff(implicit diffPrint: DiffPrint[Int]): Diff[Int] = Diff.build { (left, right) =>
     if (left == right) Identical else Different.fromPair(left, right)(diffPrint)
   }
 }
 
-trait DiffImplicits extends DiffLowPriorityImplicits with DiffPrintImplicits {
+trait DiffImplicits1 extends DiffImplicits0 {
 
   implicit val hNilDiff: Diff[HNil] = Diff.build((_, _) => Identical)
   implicit val cNilDiff: Diff[CNil] = Diff.build((_, _) => throw new RuntimeException("unexpected CNil"))
@@ -109,16 +109,20 @@ trait DiffImplicits extends DiffLowPriorityImplicits with DiffPrintImplicits {
     case (Inr(left), Inr(right)) => tailDiff(left, right)
     case (left, right) => Different.fromPair(left, right)(diffPrint)
   }
+}
 
-  implicit def setDiff[A](implicit diff: Diff[A],
-                                    diffPrint: DiffPrint[A]): Diff[Set[A]] = Diff.build { (left, right) =>
+trait DiffImplicits extends DiffImplicits1 {
+  implicit def setDiff[A, B](implicit ev: B <:< Set[A],
+                             diff: Diff[A],
+                             diffPrint: DiffPrint[A]): Diff[B] = Diff.build { (left, right) =>
     val leftNotRight = left.filterNot(l => right.exists(r => diff(l, r) == Identical))
     val rightNotLeft = right.filterNot(r => left.exists(l => diff(r, l) == Identical))
     if (left.nonEmpty || right.nonEmpty) Different.fromSets(leftNotRight, rightNotLeft) else Identical
   }
 
-  implicit def orderedDiff[A](implicit diff: Diff[A],
-                              diffPrint: DiffPrint[A]): Diff[Iterable[A]] = Diff.build { (left, right) =>
+  implicit def orderedDiff[A, B](implicit ev: B <:< Seq[A],
+                                 diff: Diff[A],
+                                 diffPrint: DiffPrint[A]): Diff[B] = Diff.build { (left, right) =>
     val indexDifferences = left
       .zipWithIndex
       .zip(right)
@@ -141,10 +145,10 @@ trait DiffImplicits extends DiffLowPriorityImplicits with DiffPrintImplicits {
 object DiffImplicits extends DiffImplicits
 
 trait UnorderedDiffImplicits extends DiffImplicits {
-  implicit def unorderedIterableDiff[B, A](implicit ev: A <:< Iterable[B],
-                                           diff: Diff[B],
-                                           diffPrint: DiffPrint[B]): Diff[A] = Diff.build { (left, right) =>
-    setDiff[B].apply(left.toSet, right.asInstanceOf[Iterable[B]].toSet)
+  implicit def unorderedIterableDiff[A, B](implicit ev: B <:< Iterable[A],
+                                           diff: Diff[A],
+                                           diffPrint: DiffPrint[A]): Diff[B] = Diff.build { (left, right) =>
+    setDiff[A, Set[A]].apply(left.toSet, right.asInstanceOf[Iterable[A]].toSet)
   }
 }
 

@@ -9,18 +9,19 @@ trait DiffPrint[A] {
 
 object DiffPrint {
   def apply[A](obj: A)(implicit p: DiffPrint[A]): String = p(obj)
+
   def build[A](f: A => String): DiffPrint[A] = new DiffPrint[A] {
     override def apply(obj: A): String = f(obj)
   }
 }
 
-trait DiffPrintDefaultImplicits {
+trait DiffPrintImplicits0 {
   implicit def defaultDiffPrint[A]: DiffPrint[A] = {
     DiffPrint.build(_.toString)
   }
 }
 
-trait DiffPrintLowPriorityImplicits extends DiffPrintDefaultImplicits {
+trait DiffPrintImplicits1 extends DiffPrintImplicits0 {
   implicit def genericDiffPrint[A, B](implicit generic: Generic.Aux[A, B],
                                       className: ClassName[A],
                                       diffPrint: Lazy[DiffPrint[B]]): DiffPrint[A] = DiffPrint.build { obj =>
@@ -28,7 +29,7 @@ trait DiffPrintLowPriorityImplicits extends DiffPrintDefaultImplicits {
   }
 }
 
-trait DiffPrintImplicits extends DiffPrintLowPriorityImplicits {
+trait DiffPrintImplicits2 extends DiffPrintImplicits1 {
   implicit val hNilDiffPrint: DiffPrint[HNil] = DiffPrint.build(_ => "")
   implicit val cNilDiffPrint: DiffPrint[CNil] = DiffPrint.build(_ => throw new RuntimeException("unexpected CNil"))
 
@@ -59,7 +60,11 @@ trait DiffPrintImplicits extends DiffPrintLowPriorityImplicits {
     case Inr(tail) => tailDiffPrint(tail)
   }
 
-  implicit def iterableDiffPrint[A](implicit diffPrint: DiffPrint[A]): DiffPrint[Iterable[A]] = DiffPrint.build { it =>
+}
+
+trait DiffPrintImplicits extends DiffPrintImplicits2 {
+  implicit def iterableDiffPrint[A, B](implicit ev: B <:< Iterable[A],
+                                       diffPrint: DiffPrint[A]): DiffPrint[B] = DiffPrint.build { it =>
     s"Iterable(${it.map(diffPrint.apply).mkString(",")})"
   }
 }
