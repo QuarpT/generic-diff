@@ -58,6 +58,10 @@ trait DiffPrintImplicits extends DiffPrintLowPriorityImplicits {
     case Inl(head) => headDiffPrint.value(head)
     case Inr(tail) => tailDiffPrint(tail)
   }
+
+  implicit def iterableDiffPrint[A](implicit diffPrint: DiffPrint[A]): DiffPrint[Iterable[A]] = DiffPrint.build { it =>
+    s"Iterable(${it.map(diffPrint.apply).mkString(",")})"
+  }
 }
 
 object DiffPrintImplicits extends DiffPrintImplicits

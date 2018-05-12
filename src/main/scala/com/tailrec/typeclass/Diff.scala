@@ -5,33 +5,25 @@ import shapeless.labelled.FieldType
 
 sealed trait DiffResult {
   def description: String
-
   def +(diffResult: DiffResult): DiffResult
-
   def prependNamespace(namespace: String): DiffResult
 }
 
 case object Identical extends DiffResult {
   override def description: String = "Identical"
-
   override def +(diffResult: DiffResult): DiffResult = diffResult
-
   override def prependNamespace(namespace: String): DiffResult = Identical
 }
 
 trait NamespacedDifference {
   def namespace: Vector[String]
-
   def description: String = s"Difference at /${namespace.mkString("/")}\n$information"
-
   def information: String
-
   def prependNamespace(n: String): NamespacedDifference
 }
 
 case class Difference(namespace: Vector[String], left: String, right: String) extends NamespacedDifference {
   def information: String = s"    $left not equals $right"
-
   def prependNamespace(n: String): Difference = copy(namespace = n +: namespace)
 }
 
@@ -56,15 +48,12 @@ case class Different(differences: Vector[NamespacedDifference]) extends DiffResu
 }
 
 object Different {
-  def fromPair[A](left: A, right: A)(implicit diffPrint: DiffPrint[A]) = {
+  def fromPair[A](left: A, right: A)(implicit diffPrint: DiffPrint[A]): Different = {
     Different(Vector(Difference(Vector.empty, diffPrint(left), diffPrint(right))))
   }
 
-  def fromSets[A](left: Set[A], right: Set[A])(implicit diffPrint: DiffPrint[A]) = {
-    if (left.nonEmpty || right.nonEmpty)
-      Different(Vector(SetDifference(Vector.empty, left.map(diffPrint.apply), right.map(diffPrint.apply))))
-    else
-      Identical
+  def fromSets[A](left: Set[A], right: Set[A])(implicit diffPrint: DiffPrint[A]): Different = {
+    Different(Vector(SetDifference(Vector.empty, left.map(diffPrint.apply), right.map(diffPrint.apply))))
   }
 }
 
@@ -80,13 +69,13 @@ object Diff {
   def apply[A](left: A, right: A)(implicit d: Diff[A]): DiffResult = d(left, right)
 }
 
-trait GenericDiffLowPriorityImplicits extends DiffPrintLowPriorityImplicits {
+trait DiffLowPriorityImplicits extends DiffPrintLowPriorityImplicits {
   implicit def defaultDiff[A](implicit diffPrint: DiffPrint[A]): Diff[A] = Diff.build { (left, right) =>
     if (left == right) Identical else Different.fromPair(left, right)(diffPrint)
   }
 }
 
-trait GenericDiffImplicits extends GenericDiffLowPriorityImplicits with DiffPrintImplicits {
+trait DiffImplicits extends DiffLowPriorityImplicits with DiffPrintImplicits {
 
   implicit val hNilDiff: Diff[HNil] = Diff.build((_, _) => Identical)
   implicit val cNilDiff: Diff[CNil] = Diff.build((_, _) => throw new RuntimeException("unexpected CNil"))
@@ -103,7 +92,6 @@ trait GenericDiffImplicits extends GenericDiffLowPriorityImplicits with DiffPrin
     diff.value(generic.to(left), generic.to(right))
   }
 
-
   implicit def coproductDiff[K <: Symbol, H, T <: Coproduct](implicit witness: Witness.Aux[K],
                                                              diffPrint: DiffPrint[FieldType[K, H] :+: T],
                                                              headDiff: Lazy[Diff[H]],
@@ -117,9 +105,29 @@ trait GenericDiffImplicits extends GenericDiffLowPriorityImplicits with DiffPrin
                           diffPrint: DiffPrint[A]): Diff[Set[A]] = Diff.build { (left, right) =>
     val leftNotRight = left.filterNot(l => right.exists(r => diff(l, r) == Identical))
     val rightNotLeft = right.filterNot(r => left.exists(l => diff(r, l) == Identical))
-    Different.fromSets(leftNotRight, rightNotLeft)
+    if (left.nonEmpty || right.nonEmpty) Different.fromSets(leftNotRight, rightNotLeft) else Identical
+  }
+
+  implicit def orderedSeqDiff[A](implicit diff: Diff[A],
+                                 diffPrint: DiffPrint[A]): Diff[Seq[A]] = Diff.build { (left, right) =>
+    val indexDifferences = left
+      .zipWithIndex
+      .zip(right)
+      .map {
+        case ((leftElement, index), rightElement) => diff(leftElement, rightElement).prependNamespace(s"[$index]")
+      }
+      .fold(Identical)(_ + _)
+
+    val existDifferences = if (left.size != right.size) {
+      val minIndex = math.min(left.size, right.size)
+      Different
+        .fromSets(left.slice(minIndex, left.size).toSet, right.slice(minIndex, right.size).toSet)
+        .prependNamespace("#")
+    } else Identical
+
+    indexDifferences + existDifferences
   }
 }
 
-object GenericDiffImplicits extends GenericDiffImplicits
+object DiffImplicits extends DiffImplicits
 
