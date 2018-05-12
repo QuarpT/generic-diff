@@ -22,7 +22,7 @@ case object Identical extends DiffResult {
 trait NamespacedDifference {
   def namespace: Vector[String]
 
-  def description: String = s"Difference at /${namespace.mkString("/")} \n    $information"
+  def description: String = s"Difference at /${namespace.mkString("/")}\n$information"
 
   def information: String
 
@@ -30,17 +30,16 @@ trait NamespacedDifference {
 }
 
 case class Difference(namespace: Vector[String], left: String, right: String) extends NamespacedDifference {
-  def information: String = s"$left not equals $right"
+  def information: String = s"    $left not equals $right"
 
   def prependNamespace(n: String): Difference = copy(namespace = n +: namespace)
 }
 
-case class SetDifference(namespace: Vector[String], leftOuter: Vector[String], rightOuter: Vector[String]) extends NamespacedDifference {
-  def information: String =
-    s"""
-       |Elements found in left but not right: ${leftOuter.mkString(",")}
-       |    Elements found in right but not left: ${rightOuter.mkString(",")}"
-     """.stripMargin
+case class SetDifference(namespace: Vector[String], leftOuter: Set[String], rightOuter: Set[String]) extends NamespacedDifference {
+  def information: String = {
+    leftOuter.headOption.fold("")(_ => s"    Elements found in left but not right: ${leftOuter.mkString(", ")}\n") +
+    rightOuter.headOption.fold("")(_ => s"    Elements found in right but not left: ${rightOuter.mkString(", ")}")
+  }
 
   def prependNamespace(n: String): SetDifference = copy(namespace = n +: namespace)
 }
@@ -59,6 +58,13 @@ case class Different(differences: Vector[NamespacedDifference]) extends DiffResu
 object Different {
   def fromPair[A](left: A, right: A)(implicit diffPrint: DiffPrint[A]) = {
     Different(Vector(Difference(Vector.empty, diffPrint(left), diffPrint(right))))
+  }
+
+  def fromSets[A](left: Set[A], right: Set[A])(implicit diffPrint: DiffPrint[A]) = {
+    if (left.nonEmpty || right.nonEmpty)
+      Different(Vector(SetDifference(Vector.empty, left.map(diffPrint.apply), right.map(diffPrint.apply))))
+    else
+      Identical
   }
 }
 
@@ -83,7 +89,7 @@ trait GenericDiffLowPriorityImplicits extends DiffPrintLowPriorityImplicits {
 trait GenericDiffImplicits extends GenericDiffLowPriorityImplicits with DiffPrintImplicits {
 
   implicit val hNilDiff: Diff[HNil] = Diff.build((_, _) => Identical)
-  implicit val cNilDiff: Diff[CNil] = Diff.build((_, _) => Identical)
+  implicit val cNilDiff: Diff[CNil] = Diff.build((_, _) => throw new RuntimeException("unexpected CNil"))
 
   implicit def hListDiff[K <: Symbol, H, T <: HList](implicit witness: Witness.Aux[K],
                                                      headDiff: Lazy[Diff[H]],
@@ -105,6 +111,13 @@ trait GenericDiffImplicits extends GenericDiffLowPriorityImplicits with DiffPrin
     case (Inl(left), Inl(right)) => headDiff.value(left, right)
     case (Inr(left), Inr(right)) => tailDiff(left, right)
     case (left, right) => Different.fromPair(left, right)(diffPrint)
+  }
+
+  implicit def setDiff[A](implicit diff: Diff[A],
+                          diffPrint: DiffPrint[A]): Diff[Set[A]] = Diff.build { (left, right) =>
+    val leftNotRight = left.filterNot(l => right.exists(r => diff(l, r) == Identical))
+    val rightNotLeft = right.filterNot(r => left.exists(l => diff(r, l) == Identical))
+    Different.fromSets(leftNotRight, rightNotLeft)
   }
 }
 
