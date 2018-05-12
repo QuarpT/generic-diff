@@ -5,32 +5,40 @@ import shapeless.labelled.FieldType
 
 sealed trait DiffResult {
   def description: String
+
   def +(diffResult: DiffResult): DiffResult
+
   def prependNamespace(namespace: String): DiffResult
 }
 
 case object Identical extends DiffResult {
   override def description: String = "Identical"
+
   override def +(diffResult: DiffResult): DiffResult = diffResult
+
   override def prependNamespace(namespace: String): DiffResult = Identical
 }
 
 trait NamespacedDifference {
   def namespace: Vector[String]
+
   def description: String = s"Difference at /${namespace.mkString("/")}\n$information"
+
   def information: String
+
   def prependNamespace(n: String): NamespacedDifference
 }
 
 case class Difference(namespace: Vector[String], left: String, right: String) extends NamespacedDifference {
   def information: String = s"    $left not equals $right"
+
   def prependNamespace(n: String): Difference = copy(namespace = n +: namespace)
 }
 
 case class SetDifference(namespace: Vector[String], leftOuter: Set[String], rightOuter: Set[String]) extends NamespacedDifference {
   def information: String = {
-    leftOuter.headOption.fold("")(_ => s"    Elements found in left but not right: ${leftOuter.mkString(", ")}\n") +
-    rightOuter.headOption.fold("")(_ => s"    Elements found in right but not left: ${rightOuter.mkString(", ")}")
+    leftOuter.headOption.fold("")(_ => s"    In left but not right: ${leftOuter.mkString(", ")}\n") +
+      rightOuter.headOption.fold("")(_ => s"    In right but not left: ${rightOuter.mkString(", ")}")
   }
 
   def prependNamespace(n: String): SetDifference = copy(namespace = n +: namespace)
@@ -71,6 +79,7 @@ object Diff {
 
 trait DiffLowPriorityImplicits extends DiffPrintLowPriorityImplicits {
   implicit def defaultDiff[A](implicit diffPrint: DiffPrint[A]): Diff[A] = Diff.build { (left, right) =>
+    //    implicit def defaultDiff(implicit diffPrint: DiffPrint[Int]): Diff[Int] = Diff.build { (left, right) =>
     if (left == right) Identical else Different.fromPair(left, right)(diffPrint)
   }
 }
@@ -102,14 +111,14 @@ trait DiffImplicits extends DiffLowPriorityImplicits with DiffPrintImplicits {
   }
 
   implicit def setDiff[A](implicit diff: Diff[A],
-                          diffPrint: DiffPrint[A]): Diff[Set[A]] = Diff.build { (left, right) =>
+                                    diffPrint: DiffPrint[A]): Diff[Set[A]] = Diff.build { (left, right) =>
     val leftNotRight = left.filterNot(l => right.exists(r => diff(l, r) == Identical))
     val rightNotLeft = right.filterNot(r => left.exists(l => diff(r, l) == Identical))
     if (left.nonEmpty || right.nonEmpty) Different.fromSets(leftNotRight, rightNotLeft) else Identical
   }
 
-  implicit def orderedSeqDiff[A](implicit diff: Diff[A],
-                                 diffPrint: DiffPrint[A]): Diff[Seq[A]] = Diff.build { (left, right) =>
+  implicit def orderedDiff[A](implicit diff: Diff[A],
+                              diffPrint: DiffPrint[A]): Diff[Iterable[A]] = Diff.build { (left, right) =>
     val indexDifferences = left
       .zipWithIndex
       .zip(right)
@@ -131,3 +140,12 @@ trait DiffImplicits extends DiffLowPriorityImplicits with DiffPrintImplicits {
 
 object DiffImplicits extends DiffImplicits
 
+trait UnorderedDiffImplicits extends DiffImplicits {
+  implicit def unorderedIterableDiff[B, A](implicit ev: A <:< Iterable[B],
+                                           diff: Diff[B],
+                                           diffPrint: DiffPrint[B]): Diff[A] = Diff.build { (left, right) =>
+    setDiff[B].apply(left.toSet, right.asInstanceOf[Iterable[B]].toSet)
+  }
+}
+
+object UnorderedDiffImplicits extends UnorderedDiffImplicits
