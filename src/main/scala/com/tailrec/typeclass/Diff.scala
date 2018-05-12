@@ -148,7 +148,7 @@ trait UnorderedDiffImplicits extends DiffImplicits {
   implicit def unorderedIterableDiff[A, B](implicit ev: B <:< Iterable[A],
                                            diff: Diff[A],
                                            diffPrint: DiffPrint[A]): Diff[B] = Diff.build { (left, right) =>
-    setDiff[A, Set[A]].apply(left.toSet, right.asInstanceOf[Iterable[A]].toSet)
+    setDiff[A, Set[A]].apply(left.toSet, right.toSet)
   }
 }
 
