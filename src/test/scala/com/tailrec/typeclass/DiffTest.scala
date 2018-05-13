@@ -8,9 +8,9 @@ class DiffTest extends FlatSpec with Matchers {
 
     sealed trait Human
 
-    case class Man(age: Int, children: Vector[Human], friends: Set[Human]) extends Human
+    case class Man(name: String, age: Int, children: Vector[Human], friends: Set[Human]) extends Human
 
-    case class Woman(age: Int, children: Vector[Human], friends: Set[Human]) extends Human
+    case class Woman(name: String, age: Int, children: Vector[Human], friends: Set[Human]) extends Human
 
     case object Baby extends Human
 
@@ -19,19 +19,22 @@ class DiffTest extends FlatSpec with Matchers {
   it should "diff ints falling back to default diff" in new DiffImplicits {
     Diff(5, 5) shouldBe Identical
     Diff(5, 6) shouldBe Different(Vector(Difference(Vector.empty, "5", "6")))
-    Diff(5, 6).toString.replaceAll("\n| ", "") shouldBe
+    Diff(5, 6).toString shouldBe
       """|Difference at /
-         |    5 not equals 6""".stripMargin.replaceAll("\n| ", "")
+         |    5 not equals 6
+         |
+         |""".stripMargin
   }
 
   it should "diff sets" in new DiffImplicits {
     Diff(Set(1, 2, 3), Set(1, 2, 3)) shouldBe Identical
     Diff(Set(1, 2, 4), Set(1, 3)) shouldBe Different(Vector(SetDifference(Vector.empty, Set("2", "4"), Set("3"))))
-    Diff(Set(1, 2, 4), Set(1, 3)).toString.replaceAll("\n| ", "") shouldBe
+    Diff(Set(1, 2, 4), Set(1, 3)).toString shouldBe
       """|Difference at /
          |    In left but not right: 2, 4
          |    In right but not left: 3
-         |""".stripMargin.replaceAll("\n| ", "")
+         |
+         |""".stripMargin
   }
 
 
@@ -42,22 +45,24 @@ class DiffTest extends FlatSpec with Matchers {
         Difference(Vector("[1]"), "2", "3"), SetDifference(Vector("#"), Set("4"), Set.empty)
       )
     )
-    Diff(List(1, 2, 4), List(1, 3)).toString.replaceAll("\n| ", "") shouldBe
+    Diff(List(1, 2, 4), List(1, 3)).toString shouldBe
       """|Difference at /[1]
          |    2 not equals 3
          |Difference at /#
          |    In left but not right: 4
-         |""".stripMargin.replaceAll("\n| ", "")
+         |
+         |""".stripMargin
   }
 
   it should "diff lists using overriding unordered seq diff" in new UnorderedDiffImplicits {
     Diff(List(1, 2, 3), List(1, 2, 3)) shouldBe Identical
     Diff(List(1, 2, 4), List(1, 3)) shouldBe Different(Vector(SetDifference(Vector.empty, Set("2", "4"), Set("3"))))
-    Diff(List(1, 2, 4), List(1, 3)).toString.replaceAll("\n| ", "") shouldBe
+    Diff(List(1, 2, 4), List(1, 3)).toString shouldBe
       """|Difference at /
          |    In left but not right: 2, 4
          |    In right but not left: 3
-         |""".stripMargin.replaceAll("\n| ", "")
+         |
+         |""".stripMargin
   }
 
   it should "compare recursive case classes" in new DiffImplicits with Scope {

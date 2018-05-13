@@ -32,7 +32,7 @@ trait NamespacedDifference {
 }
 
 case class Difference(namespace: Vector[String], left: String, right: String) extends NamespacedDifference {
-  def information: String = s"    $left not equals $right"
+  def information: String = s"    $left not equals $right\n"
 
   def prependNamespace(n: String): Difference = copy(namespace = n +: namespace)
 }
@@ -40,14 +40,14 @@ case class Difference(namespace: Vector[String], left: String, right: String) ex
 case class SetDifference(namespace: Vector[String], leftOuter: Set[String], rightOuter: Set[String]) extends NamespacedDifference {
   def information: String = {
     leftOuter.headOption.fold("")(_ => s"    In left but not right: ${leftOuter.mkString(", ")}\n") +
-      rightOuter.headOption.fold("")(_ => s"    In right but not left: ${rightOuter.mkString(", ")}")
+      rightOuter.headOption.fold("")(_ => s"    In right but not left: ${rightOuter.mkString(", ")}\n")
   }
 
   def prependNamespace(n: String): SetDifference = copy(namespace = n +: namespace)
 }
 
 case class Different(differences: Vector[NamespacedDifference]) extends DiffResult {
-  override def description: String = differences.map(_.description).mkString("\n") + "\n"
+  override def description: String = differences.map(_.description).mkString + "\n"
 
   override def +(diffResult: DiffResult): DiffResult = diffResult match {
     case Identical => this
