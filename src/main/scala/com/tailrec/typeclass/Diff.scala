@@ -9,6 +9,8 @@ sealed trait DiffResult {
   def +(diffResult: DiffResult): DiffResult
 
   def prependNamespace(namespace: String): DiffResult
+
+  override def toString: String = description
 }
 
 case object Identical extends DiffResult {
@@ -117,7 +119,7 @@ trait DiffImplicits extends DiffImplicits1 {
                              diffPrint: DiffPrint[A]): Diff[B] = Diff.build { (left, right) =>
     val leftNotRight = left.filterNot(l => right.exists(r => diff(l, r) == Identical))
     val rightNotLeft = right.filterNot(r => left.exists(l => diff(r, l) == Identical))
-    if (left.nonEmpty || right.nonEmpty) Different.fromSets(leftNotRight, rightNotLeft) else Identical
+    if (leftNotRight.nonEmpty || rightNotLeft.nonEmpty) Different.fromSets(leftNotRight, rightNotLeft) else Identical
   }
 
   implicit def orderedDiff[A, B](implicit ev: B <:< Seq[A],
@@ -145,9 +147,9 @@ trait DiffImplicits extends DiffImplicits1 {
 object DiffImplicits extends DiffImplicits
 
 trait UnorderedDiffImplicits extends DiffImplicits {
-  implicit def unorderedIterableDiff[A, B](implicit ev: B <:< Iterable[A],
-                                           diff: Diff[A],
-                                           diffPrint: DiffPrint[A]): Diff[B] = Diff.build { (left, right) =>
+  implicit def unorderedDiff[A, B](implicit ev: B <:< Iterable[A],
+                                   diff: Diff[A],
+                                   diffPrint: DiffPrint[A]): Diff[B] = Diff.build { (left, right) =>
     setDiff[A, Set[A]].apply(left.toSet, right.toSet)
   }
 }
