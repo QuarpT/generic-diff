@@ -8,9 +8,9 @@ class DiffTest extends FlatSpec with Matchers {
 
     sealed trait Human
 
-    case class Man(name: String, age: Int, children: Vector[Human], friends: Set[Human]) extends Human
+    case class Man(name: String, age: Int, children: List[Human], grandChildren: Set[Human]) extends Human
 
-    case class Woman(name: String, age: Int, children: Vector[Human], friends: Set[Human]) extends Human
+    case class Woman(name: String, age: Int, children: List[Human], grandChildren: Set[Human]) extends Human
 
     case object Baby extends Human
 
@@ -66,44 +66,80 @@ class DiffTest extends FlatSpec with Matchers {
   }
 
   it should "compare recursive case classes" in new DiffImplicits with Scope {
-    // TODO
+    Diff(
+      Man("John", 54, List(Woman("Jess", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty))),
+      Man("John", 54, List(Woman("Jess", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty)))
+    ) shouldBe Identical
+
+    Diff(
+      Man("John", 43, List(Baby, Woman("Lisa", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty))),
+      Man("John", 54, List(Woman("Sarah", 28, Nil, Set.empty)), Set(Woman("Naomi", 4, Nil, Set.empty)))
+    ) should matchPattern { case Different(_) => }
+
+    Diff(
+      Man("John", 43, List(Baby, Woman("Lisa", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty))),
+      Man("John", 54, List(Woman("Sarah", 28, Nil, Set.empty)), Set(Woman("Naomi", 4, Nil, Set.empty)))
+    ).toString shouldBe
+      """|Difference at /age
+         |    43 not equals 54
+         |Difference at /children/[0]
+         |    Baby() not equals Woman(Sarah,28,Iterable(),Iterable())
+         |Difference at /children/#
+         |    In left but not right: Woman(Lisa,28,Iterable(),Iterable())
+         |Difference at /grandChildren
+         |    In left but not right: Man(Joe,4,Iterable(),Iterable())
+         |    In right but not left: Woman(Naomi,4,Iterable(),Iterable())
+         |
+         |""".stripMargin
   }
 
   it should "compare recursive coproducts" in new DiffImplicits with Scope {
-    // TODO
+    Diff[Human](
+      Man("John", 54, List(Woman("Jess", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty))),
+      Man("John", 54, List(Woman("Jess", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty)))
+    ) shouldBe Identical
+
+    Diff(
+      Man("John", 43, List(Baby, Woman("Lisa", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty))),
+      Woman("Alice", 60, List(Woman("Sarah", 28, Nil, Set.empty)), Set(Woman("Naomi", 4, Nil, Set.empty)))
+    ) should matchPattern { case Different(_) => }
+
+    Diff(
+      Man("John", 43, List(Baby, Woman("Lisa", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty))),
+      Woman("Alice", 60, List(Woman("Sarah", 28, Nil, Set.empty)), Set(Woman("Naomi", 4, Nil, Set.empty)))
+    ).toString shouldBe
+      """|Difference at /
+         |    Man(John,43,List(Baby, Woman(Lisa,28,List(),Set())),Set(Man(Joe,4,List(),Set()))) not equals Woman(Alice,60,List(Woman(Sarah,28,List(),Set())),Set(Woman(Naomi,4,List(),Set())))
+         |
+         |""".stripMargin
   }
 
   it should "compare recursive coproducts using unordered diff" in new UnorderedDiffImplicits with Scope {
-    // TODO
+    Diff[Human](
+      Man("John", 54, List(Woman("Jess", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty))),
+      Man("John", 54, List(Woman("Jess", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty)))
+    ) shouldBe Identical
+
+    Diff(
+      Man("John", 43, List(Baby, Woman("Lisa", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty))),
+      Woman("Alice", 60, List(Woman("Sarah", 28, Nil, Set.empty)), Set(Woman("Naomi", 4, Nil, Set.empty)))
+    ) should matchPattern { case Different(_) => }
+
+    Diff(
+      Man("John", 43, List(Baby, Woman("Lisa", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty))),
+      Man("Alice", 60, List(Woman("Sarah", 28, Nil, Set.empty)), Set(Woman("Naomi", 4, Nil, Set.empty)))
+    ).toString shouldBe
+      """|Difference at /name
+         |    John not equals Alice
+         |Difference at /age
+         |    43 not equals 60
+         |Difference at /children
+         |    In left but not right: Baby(), Woman(Lisa,28,Iterable(),Iterable())
+         |    In right but not left: Woman(Sarah,28,Iterable(),Iterable())
+         |Difference at /grandChildren
+         |    In left but not right: Man(Joe,4,Iterable(),Iterable())
+         |    In right but not left: Woman(Naomi,4,Iterable(),Iterable())
+         |
+         |""".stripMargin
   }
-
-  /*
-
-    it should "diff case classes correctly" in new DiffImplicits {
-  //    println(ClassName[Outer])
-      val h: Human = Man(5)
-      val w: Human = Woman
-  //    println(shapeless.the[Generic[Human]].to(h))
-  //    println(reify(DiffPrint(h)))
-  //    println(DiffPrint(w))
-      println(Diff[List[Int]](List(123), List(456)).description)
-      println(Diff[Human](h, w).description)
-      println(Diff[Human](Outer(1,Vector(4,5,3),Set(1,3,6),Inner(4,4, Woman)), Outer(1,Vector(2,3,2,353),Set(1,2),Inner(4,5, Man(5)))).description)
-      println(Diff[Human](Outer(1,Vector(2),Set(1,2,3),Inner(4,4, Woman)), Man(5)).description)
-  //    UnwrapCoproduct(x)
-  //    UnwrapCoproduct(x)
-
-  //    Diff(Outer(1,2,3,Inner(4,4)), Outer(1,2,2,Inner(4,5))).description.replaceAll("\n| ", "") shouldBe
-  //      """
-  //        |Difference found at c
-  //        | 3
-  //        | not equals
-  //        | 2
-  //        |
-  //        |Difference found at e.g
-  //        | 4
-  //        | not equals
-  //        | 5
-  //      """.stripMargin.replaceAll("\n| ", "")
-    }*/
 }
