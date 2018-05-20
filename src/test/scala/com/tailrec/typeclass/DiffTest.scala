@@ -4,18 +4,6 @@ import org.scalatest.{FlatSpec, Matchers}
 
 class DiffTest extends FlatSpec with Matchers {
 
-  trait Scope {
-
-    sealed trait Human
-
-    case class Man(name: String, age: Int, children: List[Human], grandChildren: Set[Human]) extends Human
-
-    case class Woman(name: String, age: Int, children: List[Human], grandChildren: Set[Human]) extends Human
-
-    case object Baby extends Human
-
-  }
-
   it should "diff ints falling back to default diff" in new DiffImplicits {
     Diff(5, 5) shouldBe Identical
     Diff(5, 6) shouldBe Different(Vector(Difference(Vector.empty, "5", "6")))
@@ -65,7 +53,7 @@ class DiffTest extends FlatSpec with Matchers {
          |""".stripMargin
   }
 
-  it should "compare recursive case classes" in new DiffImplicits with Scope {
+  it should "compare recursive case classes" in new DiffImplicits {
     Diff(
       Man("John", 54, List(Woman("Jess", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty))),
       Man("John", 54, List(Woman("Jess", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty)))
@@ -93,7 +81,7 @@ class DiffTest extends FlatSpec with Matchers {
          |""".stripMargin
   }
 
-  it should "compare recursive coproducts" in new DiffImplicits with Scope {
+  it should "compare recursive coproducts" in new DiffImplicits {
     Diff[Human](
       Man("John", 54, List(Woman("Jess", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty))),
       Man("John", 54, List(Woman("Jess", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty)))
@@ -114,7 +102,7 @@ class DiffTest extends FlatSpec with Matchers {
          |""".stripMargin
   }
 
-  it should "compare recursive coproducts using unordered diff" in new UnorderedDiffImplicits with Scope {
+  it should "compare recursive coproducts using unordered diff" in new UnorderedDiffImplicits {
     Diff[Human](
       Man("John", 54, List(Woman("Jess", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty))),
       Man("John", 54, List(Woman("Jess", 28, Nil, Set.empty)), Set(Man("Joe", 4, Nil, Set.empty)))
