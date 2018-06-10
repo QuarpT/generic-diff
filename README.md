@@ -1,8 +1,8 @@
 # Generic Diff
 
-Generic Diff is a Scala library providing a customisable diff typeclasses for
+Generic Diff is a Scala library providing customisable diff typeclasses for comparing
 case classes, coproducts (sealed trait algebras), recursive algebras, sequences,
-sets and primitives.
+sets and primitives types.
 
 The library also provides a customisable diff-print typeclass for customising
 the diff output format.
