@@ -9,5 +9,5 @@ the diff output format.
 
 ### Ordered / Unordered Comparison
 
-The library provides ordered and unordered versions of the Diff typeclass.
-This affects how the library compares Iterables.
+The library provides ordered and unordered versions of the Diff typeclass affecting how
+iterables are compared.
