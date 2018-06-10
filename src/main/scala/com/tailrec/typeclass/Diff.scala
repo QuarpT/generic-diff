@@ -81,7 +81,6 @@ object Diff {
 
 trait DiffImplicits0 extends DiffPrintImplicits {
   implicit def defaultDiff[A](implicit diffPrint: DiffPrint[A]): Diff[A] = Diff.build { (left, right) =>
-    //    implicit def defaultDiff(implicit diffPrint: DiffPrint[Int]): Diff[Int] = Diff.build { (left, right) =>
     if (left == right) Identical else Different.fromPair(left, right)(diffPrint)
   }
 }
