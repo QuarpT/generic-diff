@@ -73,7 +73,6 @@ trait CustomFormattingExample extends DiffImplicits {
   println(Diff(user1, user2).description)
 }
 
-
 trait CustomSuperTypeDiffExample extends DiffImplicits {
 
   // In this example we diff two user objects which are identical except for the lastActive date Option
@@ -133,5 +132,3 @@ trait UnorderedSequenceComparison extends UnorderedDiffImplicits {
   // Identical
   println(Diff(l1, l2).description)
 }
-
-object Main extends App with UnorderedSequenceComparison
