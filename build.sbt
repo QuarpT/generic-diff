@@ -11,3 +11,12 @@ libraryDependencies ++= Seq(
 )
 
 crossScalaVersions := Seq("2.11.11", "2.12.5")
+
+ghreleaseRepoOrg := "QuarpT"
+ghreleaseRepoName := "generic-diff"
+//ghreleaseNotes
+//ghreleaseTitle
+//ghreleaseIsPrerelease
+//ghreleaseAssets
+//ghreleaseMediaTypesMap
+//ghreleaseGithubToken
