@@ -17,7 +17,7 @@ Generic diff is cross compiled for Scala 2.12 and 2.11
 
 ## Examples
 
-Detailed examples in [Examples.scala](src/main/com/tailrec/typeclass/examples/Examples.scala)
+Detailed examples in [Examples.scala](src/main/scala/com/tailrec/typeclass/examples/Examples.scala)
 
 ### Basic usage
 
