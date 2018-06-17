@@ -9,11 +9,21 @@ This is useful for writing experiments and tests which compare complex data stru
 The library also provides a customisable diff-print typeclass for customising
 the diff output format.
 
+Powered by shapeless
+
 ## Install
 
-Generic diff is cross compiled for Scala 2.12 and 2.11
+For Scala 2.12
+```
+resolvers += "jitpack" at "https://jitpack.io"
+libraryDependencies += "com.github.QuarpT" %% "generic-diff" % "v2.0.0"
+```
 
-
+For Scala 2.11
+```
+resolvers += "jitpack" at "https://jitpack.io"
+libraryDependencies += "com.github.QuarpT" %% "generic-diff" % "v1.0.0"
+```
 
 ## Examples
 
