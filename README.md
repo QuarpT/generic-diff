@@ -6,8 +6,11 @@ sets and primitives types.
 
 This is useful for writing experiments and tests which compare complex data structures
 
-The library also provides a customisable diff-print typeclass for customising
-the diff output format.
+The library also provides 
+- a customisable typeclass for controlling the diff output format
+- a typeclass for retrieving class type names, used internally
+
+The library implementation is compile time only. No runtime reflection is used.
 
 Powered by shapeless
 
