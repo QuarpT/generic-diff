@@ -62,10 +62,10 @@ Output example:
 
 ```
 println(Diff[User](user1, user2))
-Difference at /level
-    5 not equals 4
-Difference at /privateInformation/lastActive/value
-    2018-06-10T17:30:18.323Z not equals 2018-06-10T17:30:18Z
+// Difference at /level
+//     5 not equals 4
+// Difference at /privateInformation/lastActive/value
+//     2018-06-10T17:30:18.323Z not equals 2018-06-10T17:30:18Z
 ```
 
 ### Custom type comparison
@@ -109,12 +109,13 @@ class NonCaseClassUser(val username: String, val level: Int, val privateInformat
 
 implicit def nonCaseClassUserDiff(implicit stringDiff: Diff[String],
                                   intDiff: Diff[Int],
-                                  privateInformationDiff: Diff[PrivateInformation]): Diff[NonCaseClassUser] = Diff.build {
-  (left, right) =>
-    stringDiff(left.username, right.username).prependNamespace("username") +
-      intDiff(left.level, right.level).prependNamespace("level") +
-      privateInformationDiff(left.privateInformation, right.privateInformation).prependNamespace("privateInformation")
-}
+                                  privateInformationDiff: Diff[PrivateInformation]): Diff[NonCaseClassUser] =  
+  Diff.build {
+    (left, right) =>
+      stringDiff(left.username, right.username).prependNamespace("username") +
+        intDiff(left.level, right.level).prependNamespace("level") +
+        privateInformationDiff(left.privateInformation, right.privateInformation).prependNamespace("privateInformation")
+  }
  ```
 
 Example output
