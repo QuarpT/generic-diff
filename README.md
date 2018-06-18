@@ -14,6 +14,13 @@ The library implementation is compile time only. No runtime reflection is used.
 
 Powered by shapeless
 
+## Example test use case
+
+When testing a data structure against the expected value, you want to ignore comparing a 
+non deterministic nested property such as a Timestamp field. The library allows you to 
+provide a custom Timestamp diff implementation of the typeclass allowing your comparison
+to succeed. This is superior to testing against a small subset of properies on the data structure.
+
 ## Install
 
 For Scala 2.12
