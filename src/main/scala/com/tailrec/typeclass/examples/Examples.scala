@@ -118,6 +118,39 @@ trait OrderedSequenceComparison extends DiffImplicits {
   println(Diff(l1, l2).description)
 }
 
+trait NonCaseClassComparison extends DiffImplicits {
+
+  // In this example we diff two user objects with a different `level` and `lastActive` date for a non case class
+  // We construct the DiffResult explicitly using the `+` operator while prepending the field names to the diff namespace
+  // DiffResult is monoid
+
+  class NonCaseClassUser(val username: String, val level: Int, val privateInformation: PrivateInformation)
+
+  implicit def nonCaseClassUserDiff(implicit stringDiff: Diff[String],
+                                    intDiff: Diff[Int],
+                                    privateInformationDiff: Diff[PrivateInformation]): Diff[NonCaseClassUser] = Diff.build {
+    (left, right) =>
+      stringDiff(left.username, right.username).prependNamespace("username") +
+        intDiff(left.level, right.level).prependNamespace("level") +
+        privateInformationDiff(left.privateInformation, right.privateInformation).prependNamespace("privateInformation")
+  }
+
+  val now: Instant = Instant.now()
+  val nowSeconds: Instant = now.truncatedTo(ChronoUnit.SECONDS)
+
+  val user1 = new NonCaseClassUser("player1", 5, PrivateInformation("Jess", "Smith", Some(now)))
+  val user2 = new NonCaseClassUser("player1", 4, PrivateInformation("Jess", "Smith", Some(nowSeconds)))
+
+  // Output:
+  //
+  // Difference at /level
+  //     5 not equals 4
+  // Difference at /privateInformation/lastActive/value
+  //     2018-06-10T17:30:18.323Z not equals 2018-06-10T17:30:18Z
+  println(Diff(user1, user2).description)
+}
+
+
 trait UnorderedSequenceComparison extends UnorderedDiffImplicits {
 
   // In this example we diff two lists using the unordered diff typeclass

@@ -58,14 +58,10 @@ case class PrivateInformation(firstName: String, lastName: String, lastActive: O
 case class User(username: String, level: Int, privateInformation: PrivateInformation)
 ```
 
-```
-val diffResult = Diff[User](user1, user2)
-println(diffResult)
-```
-
 Output example:
 
 ```
+println(Diff[User](user1, user2))
 Difference at /level
     5 not equals 4
 Difference at /privateInformation/lastActive/value
@@ -99,6 +95,36 @@ implicit def optionDiff[A, B](implicit ev: B <:< Option[A],
   case (Some(left), Some(right)) => Different.fromPair(left, right)
   case _ => Identical
 }
+```
+
+### Custom class comparison
+
+This is only necessary for non case classes - case class comparison is provided by the library.
+
+We construct the `DiffResult` explicitly using the `+` operator while prepending the field names to the diff namespace.
+DiffResults are monoids
+
+```
+class NonCaseClassUser(val username: String, val level: Int, val privateInformation: PrivateInformation)
+
+implicit def nonCaseClassUserDiff(implicit stringDiff: Diff[String],
+                                  intDiff: Diff[Int],
+                                  privateInformationDiff: Diff[PrivateInformation]): Diff[NonCaseClassUser] = Diff.build {
+  (left, right) =>
+    stringDiff(left.username, right.username).prependNamespace("username") +
+      intDiff(left.level, right.level).prependNamespace("level") +
+      privateInformationDiff(left.privateInformation, right.privateInformation).prependNamespace("privateInformation")
+}
+ ```
+
+Example output
+
+```
+println(Diff[NonCaseClassUser](user1, user2))
+// Difference at /level
+//     5 not equals 4
+// Difference at /privateInformation/lastActive/value
+//     2018-06-10T17:30:18.323Z not equals 2018-06-10T17:30:18Z
 ```
 
 ### Custom diff formatting
